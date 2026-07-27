@@ -1,444 +1,573 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>☀️ 台東放鬆之旅</title>
-    <!-- 使用 Tailwind CSS CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的專屬旅行神器</title>
+    <!-- 引入 Tailwind CSS 快速排版 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入 React 與 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 以在瀏覽器中編譯 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Lucide Icons 圖示庫 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f3f4f6; /* bg-gray-100 */
-        }
-        /* 自定義滾動條樣式，讓手機版更好看 */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
+        /* 隱藏滾動條但保留滾動功能，讓 App 看起來更像原生 App */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; overflow: hidden; }
+        .scrollable-content { height: calc(100vh - 64px); overflow-y: auto; padding-bottom: 20px; }
+        .scrollable-content::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="text-gray-800 antialiased pb-10">
+<body>
+    <div id="root"></div>
 
-    <header class="bg-teal-600 text-white p-6 shadow-md sticky top-0 z-10">
-        <div class="max-w-3xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-wider">☀️ 台東放鬆之旅</h1>
-            <span class="text-sm bg-teal-700 px-3 py-1 rounded-full">7/2 - 7/5</span>
-        </div>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-    <main class="max-w-3xl mx-auto px-4 mt-6 space-y-8">
+        // --- 1. 範例行程資料 (未來讓 Gemini 產出這樣的格式替換即可) ---
+        const dummyItinerary = [
+            {
+                day: 1,
+                date: "10/01 (二)",
+                title: "抵達與市區探索",
+                events: [
+                    { time: "14:00", name: "抵達成田機場", note: "搭乘 Skyliner 特快車前往市區", type: "transport" },
+                    { time: "16:00", name: "新宿太陽道廣場飯店", note: "Check-in 放行李，確認分帳金額", location: "新宿太陽道廣場飯店", type: "hotel" },
+                    { time: "18:00", name: "阿夫利柚子鹽拉麵", note: "記得先抽號碼牌，只能用西瓜卡或信用卡", location: "AFURI 新宿", type: "food" }
+                ]
+            },
+            {
+                day: 2,
+                date: "10/02 (三)",
+                title: "近郊一日遊",
+                events: [
+                    { time: "09:00", name: "富士回遊3號", note: "搭車前往河口湖，準時發車勿遲到", type: "transport" },
+                    { time: "11:30", name: "天上山公園纜車", note: "拍攝富士山全景", location: "Mt. Fuji Panoramic Ropeway", type: "spot" },
+                    { time: "14:00", name: "餺飥麵 不動", note: "當地名產午餐，現金結帳", location: "Hoto Fudo", type: "food" }
+                ]
+            }
+        ];
 
-        <section class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-400">
-            <h2 class="text-xl font-bold text-indigo-600 mb-3 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                </svg>
-                來回火車資訊
-            </h2>
-            <div class="space-y-3">
-                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                    <div class="text-sm text-indigo-800 font-bold mb-1 flex items-center">
-                        去程：7/2 (四) <span class="ml-2 px-2 py-0.5 bg-indigo-200 text-indigo-700 rounded text-xs">自強 426</span>
-                    </div>
-                    <div class="flex items-center justify-between text-gray-700 font-medium mt-2 px-1">
-                        <span class="text-lg">12:28 板橋</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                        <span class="text-lg">16:30 台東</span>
-                    </div>
-                </div>
-                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                    <div class="text-sm text-indigo-800 font-bold mb-1 flex items-center">
-                        回程：7/5 (日) <span class="ml-2 px-2 py-0.5 bg-indigo-200 text-indigo-700 rounded text-xs">普悠瑪 417</span>
-                    </div>
-                    <div class="flex items-center justify-between text-gray-700 font-medium mt-2 px-1">
-                        <span class="text-lg">11:04 台東</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                        <span class="text-lg">15:18 板橋</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="space-y-6">
-            <!-- Day 1 -->
-            <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="bg-blue-50 px-5 py-3 border-b border-blue-100 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-blue-800">Day 1 (7/2)</h3>
-                    <span class="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">市區微風夜</span>
-                </div>
-                <div class="p-5">
-                    <div class="relative border-l-2 border-blue-200 ml-3 pl-6 space-y-6">
-                        
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-500 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="text-sm text-gray-500 font-semibold mb-1">11:00</div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                板橋車站集合吃午餐 🍱
-                                <a href="https://www.google.com/maps/search/?api=1&query=板橋火車站" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">吃飽後直接在板橋火車站搭火車出發</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="text-sm text-gray-500 font-semibold mb-1">16:30</div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                抵達台東車站 (自強426) 🚄
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東火車站" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">17:00 至「直航租車」取車 (Toyota，已信用卡付款) 🚗</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                THE GAYA HOTEL 潮渡假酒店 Check in 🏨
-                                <a href="https://www.google.com/maps/search/?api=1&query=THE+GAYA+HOTEL+潮渡假酒店" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">直接開到大廳外放好行李，再開去停車場後 Check in</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                晚餐時間：長生塩人 拉麵 🍜
-                                <a href="https://www.google.com/maps/search/?api=1&query=長生塩人+台東" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">品嚐超人氣美味日式拉麵</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                海濱公園散步 🌊
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東海濱公園" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">吹海風、賞月，享受愜意夜晚</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-blue-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                宵夜時光 🍗
-                                <a href="https://www.google.com/maps/search/?api=1&query=藍蜻蜓速食專賣店" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">回程順路買藍蜻蜓速食專賣店</div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- Day 2 -->
-            <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="bg-teal-50 px-5 py-3 border-b border-teal-100 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-teal-800">Day 2 (7/3)</h3>
-                    <span class="text-sm font-medium text-teal-600 bg-teal-100 px-2 py-1 rounded">海線風光</span>
-                </div>
-                <div class="p-5">
-                    <div class="relative border-l-2 border-teal-200 ml-3 pl-6 space-y-6">
-                        
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-500 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800">飯店早餐 & Check out 🍳</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                杉原灣沙灘 🏖️
-                                <a href="https://www.google.com/maps/search/?api=1&query=杉原灣沙灘" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">踏浪拍美照</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                東部海岸國家風景區管理處 ⛰️
-                                <a href="https://www.google.com/maps/search/?api=1&query=東部海岸國家風景區管理處" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                第二天午餐：成功鎮維多利亞花園茶坊 🍽️
-                                <a href="https://www.google.com/maps/search/?api=1&query=成功鎮維多利亞花園茶坊" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">享用英式氛圍精緻手作料理與茶飲</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                三仙台 🌉
-                                <a href="https://www.google.com/maps/search/?api=1&query=三仙台" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">走跨海步橋看風景</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                金剛大道 🛣️
-                                <a href="https://www.google.com/maps/search/?api=1&query=長濱金剛大道" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">直奔太平洋的無敵海景大道</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                玉長公路往玉里 ⛰️
-                                <a href="https://www.google.com/maps/search/?api=1&query=玉里橋頭臭豆腐" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">吃玉里橋頭臭豆腐！</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-400 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                東里車站 🚉
-                                <a href="https://www.google.com/maps/search/?api=1&query=東里車站" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">花東縱谷最美車站之一，欣賞田野風光</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800">7-11 採買補給 🛒</div>
-                            <div class="text-sm text-red-500 font-medium mt-1">★ 記得買零食及明早熱氣球的早餐</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-teal-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                台東綺麗渡假村 Check in 🏨
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東綺麗渡假村" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">享用飯店設施 (溫泉/泳池) + 晚餐 (已確認一泊二食方案)</div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- Day 3 -->
-            <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="bg-orange-50 px-5 py-3 border-b border-orange-100 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-orange-800">Day 3 (7/4)</h3>
-                    <span class="text-sm font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded">熱氣球與縱谷</span>
-                </div>
-                <div class="p-5">
-                    <div class="relative border-l-2 border-orange-200 ml-3 pl-6 space-y-6">
-                        
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-500 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="text-sm text-gray-500 font-semibold mb-1">05:00</div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                出門前往鹿野高台 🎈
-                                <a href="https://www.google.com/maps/search/?api=1&query=鹿野高台" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">帶著昨晚買的早餐去看熱氣球早場！(停車已預約，停在 PC 區域) 🚗</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800">回綺麗渡假村 🏨</div>
-                            <div class="text-sm text-gray-600 mt-1">吃飯店早餐，補眠休息至 Check out</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                台九線：池上伯朗大道 🌾
-                                <a href="https://www.google.com/maps/search/?api=1&query=池上伯朗大道" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">純粹金城武樹打卡拍照，不騎單車</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                池上美食 🥢
-                                <a href="https://www.google.com/maps/search/?api=1&query=大池豆包豆皮豆漿店" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">必吃大池豆包豆皮豆漿店</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                第三天午餐：水也上居手作米工坊 🍔
-                                <a href="https://www.google.com/maps/search/?api=1&query=水也上居手作米工坊" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">享用池上特色米漢堡、舒芙蕾與精緻午餐</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                關山小鎮 🚲
-                                <a href="https://www.google.com/maps/search/?api=1&query=關山環鎮自行車道" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">騎乘關山環鎮自行車道，享受微風</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-400 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                車站還汽車 ＆ 換租機車 🛵
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東火車站" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">先回車站還汽車，改租機車一日，後續市區行程機動性更高！</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                地景澤行館 Check in 🏨
-                                <a href="https://www.google.com/maps/search/?api=1&query=地景澤行館" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">放置行李，稍作休息</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-orange-300 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                晚上行程選項 🌙
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東鐵花村" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <ul class="list-disc list-inside text-sm text-gray-600 mt-1">
-                                <li>秀泰影城看電影 🍿</li>
-                                <li>逛鐵花村微光懸日 🎶</li>
-                                <li>正氣路夜市吃小吃 🍢</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- Day 4 -->
-            <article class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="bg-stone-100 px-5 py-3 border-b border-stone-200 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-stone-800">Day 4 (7/5)</h3>
-                    <span class="text-sm font-medium text-stone-600 bg-stone-200 px-2 py-1 rounded">賦歸</span>
-                </div>
-                <div class="p-5">
-                    <div class="relative border-l-2 border-stone-300 ml-3 pl-6 space-y-6">
-                        
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-stone-400 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800">悠閒早餐 ☕</div>
-                            <div class="text-sm text-gray-600 mt-1">享受最後的台東早晨時光</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-stone-400 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="font-medium text-gray-800">辦理退房與還機車 🛵</div>
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute -left-[33px] top-1 bg-stone-500 rounded-full w-4 h-4 border-4 border-white shadow"></div>
-                            <div class="text-sm text-gray-500 font-semibold mb-1">11:04</div>
-                            <div class="font-medium text-gray-800 flex items-center flex-wrap">
-                                搭車平安回家 (普悠瑪417) 🚂
-                                <a href="https://www.google.com/maps/search/?api=1&query=台東火車站" target="_blank" class="inline-flex ml-2 text-blue-500 hover:text-blue-700 bg-blue-50 p-1.5 rounded-full shadow-sm transition-colors" title="Google 導航">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </a>
-                            </div>
-                            <div class="text-sm text-gray-600 mt-1">15:18 抵達板橋，期待下次旅程！</div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        </div>
-        
-        <footer class="text-center text-gray-400 text-sm mt-8 pb-4">
-            <p>Have a wonderful trip!</p>
-        </footer>
-
-    </main>
-
-    <script>
-        // 簡單的 JS 讓 checkbox 狀態可以存在 localStorage 中，重新整理不會不見
-        document.addEventListener('DOMContentLoaded', () => {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        // --- 主應用程式 ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('itinerary');
             
-            checkboxes.forEach((box, index) => {
-                // 讀取儲存的狀態
-                const savedState = localStorage.getItem(`todo-item-${index}`);
-                if (savedState === 'true') {
-                    box.checked = true;
-                    box.nextElementSibling.classList.add('line-through', 'text-gray-400');
-                }
-
-                // 監聽改變並儲存
-                box.addEventListener('change', (e) => {
-                    localStorage.setItem(`todo-item-${index}`, e.target.checked);
-                    if (e.target.checked) {
-                        box.nextElementSibling.classList.add('line-through', 'text-gray-400');
-                    } else {
-                        box.nextElementSibling.classList.remove('line-through', 'text-gray-400');
-                    }
-                });
+            const [settings, setSettings] = useState(() => {
+                const saved = localStorage.getItem('appSettings');
+                return saved ? JSON.parse(saved) : { budgetTWD: 30000, exchangeRate: 0.215, initialCashJPY: 50000, initialSuicaJPY: 5000 };
             });
-        });
+            
+            const [itinerary, setItinerary] = useState(() => {
+                const saved = localStorage.getItem('userItinerary');
+                return saved ? JSON.parse(saved) : dummyItinerary;
+            });
+
+            return (
+                <div className="flex flex-col h-screen w-full max-w-md mx-auto bg-gray-50 shadow-xl relative">
+                    
+                    {/* 頂部標題列 */}
+                    <div className="bg-blue-600 text-white p-4 font-bold text-lg shadow-md z-10 flex justify-between items-center">
+                        <span>✈️ 旅行小幫手</span>
+                        <div className="flex gap-3 items-center">
+                            <span className="text-xs bg-blue-700 px-2 py-1 rounded">V1.0</span>
+                            <button onClick={() => setActiveTab('settings')} className="p-1 hover:bg-blue-700 rounded transition-colors"><i data-lucide="settings" className="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+
+                    {/* 主要內容區 */}
+                    <div className="scrollable-content p-4">
+                        {activeTab === 'itinerary' && <ItineraryTab itinerary={itinerary} />}
+                        {activeTab === 'shopping' && <ShoppingTab />}
+                        {activeTab === 'expense' && <ExpenseTab settings={settings} />}
+                        {activeTab === 'split' && <SplitBillTab />}
+                        {activeTab === 'settings' && <SettingsTab settings={settings} setSettings={setSettings} itinerary={itinerary} setItinerary={setItinerary} />}
+                    </div>
+
+                    {/* 底部導航列 */}
+                    <div className="h-16 bg-white border-t border-gray-200 flex justify-around items-center absolute bottom-0 w-full z-10 text-xs text-gray-500">
+                        <button onClick={() => setActiveTab('itinerary')} className={`flex flex-col items-center p-2 w-1/4 ${activeTab === 'itinerary' ? 'text-blue-600 font-bold' : ''}`}>
+                            <i data-lucide="map" className="mb-1"></i> 行程
+                        </button>
+                        <button onClick={() => setActiveTab('shopping')} className={`flex flex-col items-center p-2 w-1/4 ${activeTab === 'shopping' ? 'text-blue-600 font-bold' : ''}`}>
+                            <i data-lucide="shopping-bag" className="mb-1"></i> 購物
+                        </button>
+                        <button onClick={() => setActiveTab('expense')} className={`flex flex-col items-center p-2 w-1/4 ${activeTab === 'expense' ? 'text-blue-600 font-bold' : ''}`}>
+                            <i data-lucide="wallet" className="mb-1"></i> 記帳
+                        </button>
+                        <button onClick={() => setActiveTab('split')} className={`flex flex-col items-center p-2 w-1/4 ${activeTab === 'split' ? 'text-blue-600 font-bold' : ''}`}>
+                            <i data-lucide="users" className="mb-1"></i> 分帳
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 子頁面：行程 ---
+        function ItineraryTab({ itinerary }) {
+            const openMap = (query) => {
+                if(query) {
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
+                }
+            };
+
+            const getTypeTag = (type) => {
+                switch(type) {
+                    case 'transport': return <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded font-medium border border-orange-200">🚆 交通</span>;
+                    case 'hotel': return <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded font-medium border border-purple-200">🏨 住宿</span>;
+                    case 'food': return <span className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-medium border border-red-200">🍜 餐飲</span>;
+                    case 'spot': return <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-medium border border-green-200">📸 景點</span>;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="space-y-6 pb-6">
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">旅遊行程表</h2>
+                    {itinerary.length === 0 && (
+                        <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
+                            <p className="text-gray-500 mb-2">目前沒有行程資料</p>
+                            <p className="text-sm text-blue-500">請點擊右上角 ⚙️ 進入設定匯入行程</p>
+                        </div>
+                    )}
+                    {itinerary.map((dayPlan, idx) => (
+                        <div key={idx} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                            <div className="bg-blue-50 px-4 py-3 border-b border-blue-100 flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-bold text-blue-800 text-lg">Day {dayPlan.day}</h3>
+                                    <p className="text-xs text-blue-600 mt-0.5">{dayPlan.date} · {dayPlan.title}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 space-y-6">
+                                {dayPlan.events.map((event, eIdx) => (
+                                    <div key={eIdx} className="flex gap-3 relative">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 z-10"></div>
+                                            {eIdx !== dayPlan.events.length -1 && <div className="w-0.5 h-full bg-gray-200 absolute top-3"></div>}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded">{event.time}</span>
+                                                    {getTypeTag(event.type)}
+                                                </div>
+                                                {event.location && (
+                                                    <button onClick={() => openMap(event.location)} className="text-blue-500 bg-blue-50 p-1.5 rounded-full hover:bg-blue-100 shadow-sm transition-colors">
+                                                        📍
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mt-1">
+                                                <span className="font-bold text-gray-900 text-base">{event.name}</span>
+                                            </div>
+                                            {event.note && <p className="text-xs text-gray-500 mt-1.5 bg-gray-50 p-2 rounded border border-gray-100">{event.note}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        // --- 子頁面：購物清單 (已實作 LocalStorage 儲存) ---
+        function ShoppingTab() {
+            // 初始化時從 localStorage 讀取
+            const [items, setItems] = useState(() => {
+                const saved = localStorage.getItem('shoppingList');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [newItemName, setNewItemName] = useState('');
+            const [newRecipient, setNewRecipient] = useState('');
+
+            // 當 items 改變時，存入 localStorage
+            useEffect(() => {
+                localStorage.setItem('shoppingList', JSON.stringify(items));
+            }, [items]);
+
+            const addItem = () => {
+                if (!newItemName) return;
+                const newItem = { id: Date.now(), name: newItemName, recipient: newRecipient || '自己', isBought: false };
+                setItems([...items, newItem]);
+                setNewItemName(''); setNewRecipient('');
+            };
+
+            const toggleBought = (id) => {
+                setItems(items.map(item => item.id === id ? { ...item, isBought: !item.isBought } : item));
+            };
+
+            const deleteItem = (id) => {
+                setItems(items.filter(item => item.id !== id));
+            };
+
+            return (
+                <div>
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">伴手禮 & 代購清單</h2>
+                    
+                    {/* 新增區塊 */}
+                    <div className="bg-white p-3 rounded-xl shadow-sm mb-4 border border-gray-100">
+                        <div className="flex gap-2 mb-2">
+                            <input type="text" placeholder="物品名稱 (例: 薯條三兄弟)" className="flex-1 p-2 border rounded bg-gray-50 text-sm" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                        </div>
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="買給誰 (預設: 自己)" className="flex-1 p-2 border rounded bg-gray-50 text-sm" value={newRecipient} onChange={(e) => setNewRecipient(e.target.value)} />
+                            <button onClick={addItem} className="bg-blue-600 text-white px-4 py-2 rounded font-medium text-sm">新增</button>
+                        </div>
+                    </div>
+
+                    {/* 列表區塊 */}
+                    <div className="space-y-2">
+                        {items.length === 0 && <p className="text-center text-gray-400 text-sm py-4">目前清單空空的哦～</p>}
+                        {items.map(item => (
+                            <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg border ${item.isBought ? 'bg-gray-100 border-gray-200' : 'bg-white border-blue-100 shadow-sm'}`}>
+                                <div className="flex items-center gap-3">
+                                    <input type="checkbox" checked={item.isBought} onChange={() => toggleBought(item.id)} className="w-5 h-5 text-blue-600" />
+                                    <div>
+                                        <p className={`font-medium ${item.isBought ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{item.name}</p>
+                                        <p className="text-xs text-gray-500">對象: <span className="text-blue-600 font-medium">{item.recipient}</span></p>
+                                    </div>
+                                </div>
+                                <button onClick={() => deleteItem(item.id)} className="text-red-400 hover:text-red-600 p-2">
+                                    ❌
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 子頁面：記帳 (多幣別與預算) ---
+        function ExpenseTab({ settings }) {
+            const [expenses, setExpenses] = useState(() => {
+                const saved = localStorage.getItem('expenseList');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [amount, setAmount] = useState('');
+            const [category, setCategory] = useState('食');
+            const [method, setMethod] = useState('cash'); 
+            const [note, setNote] = useState('');
+
+            useEffect(() => {
+                localStorage.setItem('expenseList', JSON.stringify(expenses));
+            }, [expenses]);
+
+            const addExpense = () => {
+                if (!amount || isNaN(amount) || amount <= 0) return;
+                const newExpense = {
+                    id: Date.now(),
+                    amount: parseFloat(amount),
+                    category,
+                    method,
+                    note,
+                    date: new Date().toLocaleDateString()
+                };
+                setExpenses([newExpense, ...expenses]);
+                setAmount('');
+                setNote('');
+            };
+
+            const deleteExpense = (id) => {
+                setExpenses(expenses.filter(e => e.id !== id));
+            };
+
+            // 計算各項支出與剩餘預算
+            let spentCashJPY = 0;
+            let spentSuicaJPY = 0;
+            let spentCardJPY = 0;
+
+            expenses.forEach(e => {
+                if (e.method === 'cash') spentCashJPY += e.amount;
+                else if (e.method === 'suica') spentSuicaJPY += e.amount;
+                else if (e.method === 'card') spentCardJPY += e.amount;
+            });
+
+            const remainingCash = (settings.initialCashJPY || 0) - spentCashJPY;
+            const remainingSuica = (settings.initialSuicaJPY || 0) - spentSuicaJPY;
+            const totalSpentJPY = spentCashJPY + spentSuicaJPY + spentCardJPY;
+            // 將所有日幣花費換算為台幣，去扣除總預算
+            const equivalentSpentTWD = totalSpentJPY * (settings.exchangeRate || 0.215);
+            const remainingTWD = (settings.budgetTWD || 0) - equivalentSpentTWD;
+
+            const getCategoryIcon = (cat) => {
+                switch(cat) {
+                    case '食': return '🍜';
+                    case '衣': return '👕';
+                    case '住': return '🏨';
+                    case '行': return '🚆';
+                    case '育樂': return '🎢';
+                    case '其他': return '🛒';
+                    default: return '💰';
+                }
+            };
+
+            const getMethodName = (m) => {
+                if(m === 'cash') return '現金';
+                if(m === 'suica') return '西瓜卡';
+                if(m === 'card') return '刷卡';
+                return m;
+            };
+
+            return (
+                <div className="pb-10 space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">記帳與預算</h2>
+                    
+                    {/* 儀表板 */}
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-5 rounded-xl shadow-md text-white">
+                        <div className="mb-3">
+                            <p className="text-blue-200 text-xs mb-1">剩餘總預算 (TWD)</p>
+                            <p className="text-3xl font-bold">NT$ {Math.round(remainingTWD).toLocaleString()}</p>
+                        </div>
+                        <div className="flex justify-between border-t border-blue-400/50 pt-3 mt-2">
+                            <div>
+                                <p className="text-blue-200 text-xs mb-0.5">現金剩餘 (JPY)</p>
+                                <p className="text-base font-bold">¥ {remainingCash.toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p className="text-blue-200 text-xs mb-0.5">西瓜卡剩餘 (JPY)</p>
+                                <p className="text-base font-bold">¥ {remainingSuica.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 新增花費 */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+                        <div className="flex gap-2">
+                            <select value={category} onChange={e => setCategory(e.target.value)} className="w-1/3 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500 outline-none">
+                                <option value="食">食 🍜</option>
+                                <option value="衣">衣 👕</option>
+                                <option value="住">住 🏨</option>
+                                <option value="行">行 🚆</option>
+                                <option value="育樂">育樂 🎢</option>
+                                <option value="其他">其他 🛒</option>
+                            </select>
+                            <input type="number" placeholder="金額 (日圓)" className="flex-1 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500 outline-none" value={amount} onChange={e => setAmount(e.target.value)} />
+                        </div>
+                        <div className="flex gap-2">
+                            <select value={method} onChange={e => setMethod(e.target.value)} className="w-1/3 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500 outline-none">
+                                <option value="cash">現金</option>
+                                <option value="suica">西瓜卡</option>
+                                <option value="card">刷卡</option>
+                            </select>
+                            <input type="text" placeholder="備註 (如: 拉麵)" className="flex-1 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500 outline-none" value={note} onChange={e => setNote(e.target.value)} />
+                        </div>
+                        <button onClick={addExpense} className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-sm transition-colors active:scale-95">新增一筆花費</button>
+                    </div>
+
+                    {/* 花費明細清單 */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <h3 className="text-base font-bold text-gray-700">花費明細</h3>
+                            <span className="text-xs text-gray-400">共 {expenses.length} 筆</span>
+                        </div>
+                        {expenses.length === 0 && <p className="text-center text-gray-400 text-sm py-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">目前尚無記帳紀錄！</p>}
+                        {expenses.map(e => (
+                            <div key={e.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                                <div className="flex gap-3 items-center">
+                                    <div className="text-2xl bg-gray-50 p-2 rounded-lg">{getCategoryIcon(e.category)}</div>
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm mb-1">{e.note || e.category}</p>
+                                        <div className="flex gap-2 text-xs text-gray-500">
+                                            <span className="bg-gray-100 px-1.5 py-0.5 rounded">{e.date}</span>
+                                            <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{getMethodName(e.method)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-bold text-gray-800 text-base">¥{e.amount.toLocaleString()}</span>
+                                    <button onClick={() => deleteExpense(e.id)} className="text-gray-300 hover:text-red-500 p-1" title="刪除">❌</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 子頁面：分帳 (自訂對象與代墊項目) ---
+        function SplitBillTab() {
+            const [splits, setSplits] = useState(() => {
+                const saved = localStorage.getItem('splitList');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [payer, setPayer] = useState('自己');
+            const [debtor, setDebtor] = useState('');
+            const [item, setItem] = useState('');
+            const [amount, setAmount] = useState('');
+
+            useEffect(() => {
+                localStorage.setItem('splitList', JSON.stringify(splits));
+            }, [splits]);
+
+            const addSplit = () => {
+                if (!debtor || !amount || !item) return;
+                const newSplit = {
+                    id: Date.now(),
+                    payer: payer || '自己',
+                    debtor,
+                    item,
+                    amount: parseFloat(amount),
+                    date: new Date().toLocaleDateString()
+                };
+                setSplits([newSplit, ...splits]);
+                setDebtor(''); setItem(''); setAmount('');
+            };
+
+            const deleteSplit = (id) => {
+                // 用綠色勾勾刪除，代表已結清
+                setSplits(splits.filter(s => s.id !== id));
+            };
+
+            return (
+                <div className="pb-10 space-y-6">
+                    {}
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">代墊分帳本</h2>
+                    
+                    {/* 新增區塊 */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="誰代墊? (預設: 自己)" className="w-1/3 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500" value={payer} onChange={e => setPayer(e.target.value)} />
+                            <input type="text" placeholder="欠款人姓名" className="flex-1 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500" value={debtor} onChange={e => setDebtor(e.target.value)} />
+                        </div>
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="代墊項目 (例: 晚餐)" className="flex-1 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500" value={item} onChange={e => setItem(e.target.value)} />
+                            <input type="number" placeholder="金額" className="w-1/3 p-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:border-blue-500" value={amount} onChange={e => setAmount(e.target.value)} />
+                        </div>
+                        <button onClick={addSplit} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg font-bold mt-2 shadow-sm transition-colors active:scale-95">新增一筆代墊</button>
+                    </div>
+
+                    {}
+                    {/* 歷史紀錄清單 */}
+                    <div className="flex justify-between items-end mb-3 px-1">
+                        <h3 className="text-base font-bold text-gray-700">未結算明細</h3>
+                        <span className="text-xs text-gray-400">共 {splits.length} 筆</span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        {splits.length === 0 && <p className="text-center text-gray-400 text-sm py-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">目前沒有需要分帳的紀錄！</p>}
+                        {splits.map(s => (
+                            <div key={s.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                <div>
+                                    <p className="font-bold text-gray-800 text-sm mb-1">{s.item}</p>
+                                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                                        <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{s.payer}</span>
+                                        <span>幫</span>
+                                        <span className="bg-pink-50 text-pink-700 px-1.5 py-0.5 rounded">{s.debtor}</span>
+                                        <span className="ml-2">{s.date}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-bold text-gray-800 text-base">
+                                        {s.amount.toLocaleString()}
+                                    </span>
+                                    <button onClick={() => deleteSplit(s.id)} className="text-gray-300 hover:text-green-500 p-1" title="標記為已結清">✅</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 子頁面：設定 (預算設定與行程匯入) ---
+        function SettingsTab({ settings, setSettings, itinerary, setItinerary }) {
+            const [localSettings, setLocalSettings] = useState(settings);
+            const [jsonInput, setJsonInput] = useState(JSON.stringify(itinerary, null, 2));
+            const [saveStatus, setSaveStatus] = useState('');
+
+            const handleSettingChange = (e) => {
+                const { name, value } = e.target;
+                setLocalSettings(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+            };
+
+            const saveSettings = () => {
+                setSettings(localSettings);
+                localStorage.setItem('appSettings', JSON.stringify(localSettings));
+                setSaveStatus('✅ 預算設定已儲存！');
+                setTimeout(() => setSaveStatus(''), 2000);
+            };
+
+            const saveItinerary = () => {
+                try {
+                    const parsed = JSON.parse(jsonInput);
+                    if(!Array.isArray(parsed)) throw new Error("必須是陣列格式");
+                    setItinerary(parsed);
+                    localStorage.setItem('userItinerary', JSON.stringify(parsed));
+                    setSaveStatus('✅ 行程已成功匯入！');
+                    setTimeout(() => setSaveStatus(''), 2000);
+                } catch (error) {
+                    setSaveStatus('❌ 行程 JSON 格式錯誤，請檢查！');
+                    setTimeout(() => setSaveStatus(''), 3000);
+                }
+            };
+
+            return (
+                <div className="pb-10 space-y-6">
+                    <h2 className="text-xl font-bold text-gray-800 border-b pb-2">系統設定</h2>
+
+                    {/* 預算設定 */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">💰 預算與資產設定</h3>
+                        <div className="space-y-3 text-sm">
+                            <div>
+                                <label className="block text-gray-500 mb-1">台幣總預算 (NT$)</label>
+                                <input type="number" name="budgetTWD" value={localSettings.budgetTWD} onChange={handleSettingChange} className="w-full p-2 border rounded bg-gray-50 focus:border-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-gray-500 mb-1">預估匯率 (例: 0.215)</label>
+                                <input type="number" step="0.001" name="exchangeRate" value={localSettings.exchangeRate} onChange={handleSettingChange} className="w-full p-2 border rounded bg-gray-50 focus:border-blue-500" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-gray-500 mb-1">攜帶現金 (¥)</label>
+                                    <input type="number" name="initialCashJPY" value={localSettings.initialCashJPY} onChange={handleSettingChange} className="w-full p-2 border rounded bg-gray-50 focus:border-blue-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-gray-500 mb-1">西瓜卡餘額 (¥)</label>
+                                    <input type="number" name="initialSuicaJPY" value={localSettings.initialSuicaJPY} onChange={handleSettingChange} className="w-full p-2 border rounded bg-gray-50 focus:border-blue-500" />
+                                </div>
+                            </div>
+                            <button onClick={saveSettings} className="w-full bg-blue-600 text-white p-2 rounded-lg font-bold mt-2 shadow-sm active:scale-95 transition-transform">儲存預算設定</button>
+                        </div>
+                    </div>
+
+                    {/* 行程匯入 */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                        <h3 className="font-bold text-gray-700 mb-1 flex items-center gap-2">📅 匯入專屬行程</h3>
+                        <p className="text-xs text-gray-500 mb-3 bg-blue-50 p-2 rounded">
+                            將 Gemini 產生的 JSON 格式行程貼入下方即可更新。<br/>
+                            <span className="text-blue-600 font-bold">💡 分享給朋友時，只要請 AI 單獨產出朋友同行的天數，傳給他們貼上即可！</span>
+                        </p>
+                        <textarea 
+                            value={jsonInput} 
+                            onChange={e => setJsonInput(e.target.value)} 
+                            className="w-full h-40 p-2 text-xs font-mono border rounded bg-gray-800 text-green-400 focus:outline-none"
+                            placeholder="在此貼上行程 JSON 陣列..."
+                        ></textarea>
+                        <button onClick={saveItinerary} className="w-full bg-gray-800 text-white p-2 rounded-lg font-bold mt-2 shadow-sm active:scale-95 transition-transform">匯入/更新行程</button>
+                    </div>
+
+                    {saveStatus && (
+                        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-bold text-white ${saveStatus.includes('✅') ? 'bg-green-500' : 'bg-red-500'}`}>
+                            {saveStatus}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 渲染 App，並在渲染後啟動 Lucide 圖示
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        
+        // 延遲執行 icon 渲染，確保 React 已經把 DOM 畫出來了
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
     </script>
 </body>
 </html>
