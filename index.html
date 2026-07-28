@@ -636,7 +636,7 @@
                 setExpenses(expenses.filter(e => e.id !== id));
             };
 
-            const categoryMap = { '食': 'food', '購物': 'shopping', '住': 'accommodation', '交通+門票': 'transport', '其他': 'other' };
+            const categoryMap = { '食': 'food', '購物': 'shopping', '住': 'accommodation', '交通+門票': 'transport', '其他': 'other', '儲值': 'topup' };
 
             let spentByCategoryTWD = { food: 0, shopping: 0, accommodation: 0, transport: 0, other: 0 };
             let spentCashJPY = 0;
@@ -646,6 +646,22 @@
             expenses.forEach(e => {
                 const curr = e.currency || 'JPY';
                 
+                // ==================== 西瓜卡加值 (儲值) 核心邏輯區塊 ====================
+                if (e.category === '儲值') {
+                    // 若選擇台幣輸入，自動依匯率換算為日圓金額；若選擇日圓則直接使用
+                    const jpyAmount = curr === 'JPY' ? e.amount : e.amount / (settings.exchangeRate || 0.215);
+                    
+                    if (e.method === 'cash') {
+                        spentCashJPY += jpyAmount;  // 用現金加值：現金餘額減少 (花費金額+jpyAmount)
+                        spentSuicaJPY -= jpyAmount; // 西瓜卡餘額增加 (花費金額-jpyAmount)
+                    } else if (e.method === 'card') {
+                        spentCardJPY += jpyAmount;  // 用信用卡/Apple Pay加值：信用卡帳單增加
+                        spentSuicaJPY -= jpyAmount; // 西瓜卡餘額增加
+                    }
+                    return; // 關鍵：加值僅為資產轉移，此處直接 return，不列入一般食衣住行預算消耗
+                }
+                // =======================================================================
+
                 if (curr === 'JPY') {
                     if (e.method === 'cash') spentCashJPY += e.amount;
                     else if (e.method === 'suica') spentSuicaJPY += e.amount;
@@ -678,6 +694,7 @@
                     case '住': return '🏨';
                     case '交通+門票': return '🎫';
                     case '其他': return '🛒';
+                    case '儲值': return '💳';
                     default: return '💰';
                 }
             };
@@ -758,6 +775,7 @@
                                 <option value="住">住 🏨</option>
                                 <option value="交通+門票">交/票 🎫</option>
                                 <option value="其他">其他 🛒</option>
+                                <option value="儲值">加值 💳</option>
                             </select>
                             <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-1/4 p-2 border border-gray-200 rounded-xl bg-white text-xs outline-none">
                                 <option value="JPY">日圓</option>
@@ -781,8 +799,12 @@
                         {sortedDates.length === 0 && <p className="text-center text-gray-400 text-xs py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">目前尚無記帳紀錄！</p>}
                         
                         {sortedDates.map(dateStr => {
-                            const dailyJPY = groupedExpenses[dateStr].filter(e => (e.currency || 'JPY') === 'JPY').reduce((sum, e) => sum + e.amount, 0);
-                            const dailyTWD = groupedExpenses[dateStr].filter(e => e.currency === 'TWD').reduce((sum, e) => sum + e.amount, 0);
+                            const dailyJPY = groupedExpenses[dateStr]
+                                .filter(e => (e.currency || 'JPY') === 'JPY' && e.category !== '儲值')
+                                .reduce((sum, e) => sum + e.amount, 0);
+                            const dailyTWD = groupedExpenses[dateStr]
+                                .filter(e => e.currency === 'TWD' && e.category !== '儲值')
+                                .reduce((sum, e) => sum + e.amount, 0);
                             
                             return (
                                 <div key={dateStr} className="space-y-2">
@@ -809,8 +831,8 @@
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className={`font-bold text-sm ${e.method === 'card' ? 'text-red-600' : 'text-gray-800'}`}>
-                                                    {curr === 'TWD' ? 'NT$' : '¥'}{e.amount.toLocaleString()}
+                                                <span className={`font-bold text-sm ${e.category === '儲值' ? 'text-green-600' : e.method === 'card' ? 'text-red-600' : 'text-gray-800'}`}>
+                                                    {e.category === '儲值' ? '⇄ ' : ''}{curr === 'TWD' ? 'NT$' : '¥'}{e.amount.toLocaleString()}
                                                 </span>
                                                 <button onClick={() => deleteExpense(e.id)} className="text-gray-300 hover:text-red-500 p-1 text-xs">❌</button>
                                             </div>
